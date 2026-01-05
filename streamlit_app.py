@@ -1,13 +1,43 @@
 import streamlit as st
 import os
 from agent import InvestmentAgent
+from streamlit_extras.colored_header import colored_header
+from streamlit_extras.add_vertical_space import add_vertical_space
+from streamlit_option_menu import option_menu
 
 # 페이지 설정
 st.set_page_config(
     page_title="버핏 스타일 주식 분석기",
     page_icon="📈",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# CSS 스타일링
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .subtitle {
+        font-size: 1.2rem;
+        color: #64748b;
+        margin-bottom: 2rem;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        padding: 12px 24px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # 세션 상태 초기화
 if "logged_in" not in st.session_state:
@@ -17,171 +47,277 @@ if "agent" not in st.session_state:
 
 # 로그인 페이지
 if not st.session_state.logged_in:
-    st.title("🔐 버핏 스타일 주식 분석기 로그인")
+    add_vertical_space(2)
 
-    st.markdown("""
-    ### 환영합니다!
-    분석을 시작하려면 API 키를 입력해주세요.
-    """)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown('<h1 class="main-header">🔐 버핏 스타일 주식 분석기</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="subtitle">워렌 버핏의 투자 철학으로 주식을 분석합니다</p>', unsafe_allow_html=True)
 
-    with st.form("login_form"):
-        st.subheader("API 키 입력")
+        add_vertical_space(2)
 
-        openai_key = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            help="https://platform.openai.com/api-keys 에서 발급받으세요"
+        colored_header(
+            label="API 키 로그인",
+            description="분석을 시작하려면 API 키를 입력해주세요",
+            color_name="blue-70"
         )
 
-        perplexity_key = st.text_input(
-            "Perplexity API Key",
-            type="password",
-            help="https://www.perplexity.ai/settings/api 에서 발급받으세요"
-        )
+        add_vertical_space(1)
 
-        submit_button = st.form_submit_button("🚀 로그인", use_container_width=True)
+        with st.form("login_form"):
+            openai_key = st.text_input(
+                "🤖 OpenAI API Key",
+                type="password",
+                placeholder="sk-...",
+                help="https://platform.openai.com/api-keys"
+            )
 
-        if submit_button:
-            if not openai_key or not perplexity_key:
-                st.error("⚠️ 모든 API 키를 입력해주세요!")
-            else:
-                try:
-                    # 기본 PDF 경로 확인
-                    default_pdf = "stockking.pdf"
-                    pdf_path = default_pdf if os.path.exists(default_pdf) else None
+            add_vertical_space(1)
 
-                    # API 키 검증을 위해 에이전트 초기화 (PDF 포함)
-                    agent = InvestmentAgent(
-                        openai_api_key=openai_key,
-                        perplexity_api_key=perplexity_key,
-                        pdf_path=pdf_path
-                    )
-                    st.session_state.agent = agent
-                    st.session_state.logged_in = True
+            perplexity_key = st.text_input(
+                "🔍 Perplexity API Key",
+                type="password",
+                placeholder="pplx-...",
+                help="https://www.perplexity.ai/settings/api"
+            )
 
-                    # RAG 초기화 상태 표시
-                    if agent.vector_store:
-                        st.success(f"✅ 로그인 성공! (RAG 초기화 완료: {pdf_path})")
-                    else:
-                        st.success("✅ 로그인 성공! (RAG 미사용)")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ API 키 검증 실패: {str(e)}")
+            add_vertical_space(2)
 
-    # 정보 섹션
-    st.markdown("---")
-    st.info("""
-    💡 **API 키 발급 방법**
+            col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+            with col_btn2:
+                submit_button = st.form_submit_button(
+                    "🚀 로그인하고 시작하기",
+                    use_container_width=True,
+                    type="primary"
+                )
 
-    **OpenAI API Key:**
-    1. https://platform.openai.com 접속
-    2. 회원가입/로그인
-    3. API Keys 메뉴에서 새 키 생성
+            if submit_button:
+                if not openai_key or not perplexity_key:
+                    st.error("⚠️ 모든 API 키를 입력해주세요!", icon="🚨")
+                else:
+                    try:
+                        with st.spinner("로그인 중..."):
+                            default_pdf = "stockking.pdf"
+                            pdf_path = default_pdf if os.path.exists(default_pdf) else None
 
-    **Perplexity API Key:**
-    1. https://www.perplexity.ai 접속
-    2. 회원가입/로그인
-    3. Settings → API에서 키 생성
+                            agent = InvestmentAgent(
+                                openai_api_key=openai_key,
+                                perplexity_api_key=perplexity_key,
+                                pdf_path=pdf_path
+                            )
+                            st.session_state.agent = agent
+                            st.session_state.logged_in = True
 
-    ⚠️ API 키는 안전하게 보관하고 절대 공유하지 마세요!
-    """)
+                            if agent.vector_store:
+                                st.success(f"✅ 로그인 성공! RAG 시스템 활성화됨", icon="✨")
+                            else:
+                                st.success("✅ 로그인 성공!", icon="✨")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ API 키 검증 실패: {str(e)}", icon="🚨")
+
+        add_vertical_space(2)
+
+        with st.expander("💡 API 키 발급 가이드", expanded=False):
+            col_guide1, col_guide2 = st.columns(2)
+
+            with col_guide1:
+                st.markdown("""
+                **🤖 OpenAI API Key**
+                1. platform.openai.com 접속
+                2. 회원가입/로그인
+                3. API Keys 메뉴에서 생성
+                4. 크레딧 충전 필요
+                """)
+
+            with col_guide2:
+                st.markdown("""
+                **🔍 Perplexity API Key**
+                1. perplexity.ai 접속
+                2. 회원가입/로그인
+                3. Settings → API
+                4. 새 키 생성
+                """)
+
+            st.warning("⚠️ API 키는 안전하게 보관하고 절대 공유하지 마세요!", icon="🔒")
 
 # 메인 애플리케이션
 else:
-    # 헤더 영역
-    col_title, col_logout = st.columns([4, 1])
+    # 헤더
+    col_logo, col_title, col_logout = st.columns([0.5, 3, 1])
+    with col_logo:
+        st.markdown("# 📈")
     with col_title:
-        st.title("📈 버핏 스타일 주식 분석기")
+        st.markdown('<h1 class="main-header" style="font-size: 2.5rem;">버핏 스타일 주식 분석기</h1>', unsafe_allow_html=True)
     with col_logout:
-        if st.button("🚪 로그아웃", use_container_width=True):
+        add_vertical_space(1)
+        if st.button("🚪 로그아웃", use_container_width=True, type="secondary"):
             st.session_state.logged_in = False
             st.session_state.agent = None
             st.rerun()
 
     st.markdown("---")
 
-    # 사이드바 - 설정
+    # 사이드바
     with st.sidebar:
-        st.header("⚙️ 분석 설정")
-
-        st.markdown("---")
-        st.subheader("🎛️ 파라미터 설정")
-
-        # Perplexity 설정
-        st.markdown("**Perplexity 설정**")
-        perplexity_max_tokens = st.slider(
-            "Max Tokens",
-            500, 3000, 1500,
-            key="pplx_tokens",
-            help="응답 길이 조절"
-        )
-        perplexity_temperature = st.slider(
-            "Temperature",
-            0.0, 1.0, 0.2,
-            key="pplx_temp",
-            help="창의성 조절 (낮을수록 일관적)"
+        colored_header(
+            label="설정 패널",
+            description="분석 파라미터 조정",
+            color_name="blue-70"
         )
 
-        st.markdown("**OpenAI 설정**")
-        openai_max_tokens = st.slider(
-            "Max Tokens",
-            500, 4000, 2000,
-            key="openai_tokens",
-            help="분석 길이 조절"
-        )
-        openai_temperature = st.slider(
-            "Temperature",
-            0.0, 1.0, 0.3,
-            key="openai_temp",
-            help="분석 창의성 조절"
+        add_vertical_space(1)
+
+        selected = option_menu(
+            menu_title=None,
+            options=["🎛️ 파라미터", "📄 PDF 업로드"],
+            icons=["sliders", "file-earmark-pdf"],
+            default_index=0,
+            styles={
+                "container": {"padding": "0!important"},
+                "nav-link": {
+                    "font-size": "14px",
+                    "text-align": "left",
+                    "margin": "0px",
+                    "--hover-color": "#eee"
+                },
+                "nav-link-selected": {"background-color": "#3b82f6"}
+            }
         )
 
-        # PDF 업로드
-        st.markdown("---")
-        st.subheader("📄 버크셔 서한 PDF")
-        uploaded_file = st.file_uploader(
-            "PDF 업로드 (선택사항)",
-            type=["pdf"],
-            help="워렌 버핏의 투자 철학이 담긴 PDF를 업로드하세요"
-        )
+        add_vertical_space(1)
 
-        if uploaded_file:
-            with open("temp_uploaded.pdf", "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.success("✓ PDF 업로드 완료")
+        # 변수 초기화 (여기에 추가!)
+        uploaded_file = None
+        perplexity_max_tokens = 1500
+        perplexity_temperature = 0.2
+        openai_max_tokens = 2000
+        openai_temperature = 0.3
+
+        if selected == "🎛️ 파라미터":
+            st.markdown("### 🔍 Perplexity 설정")
+            perplexity_max_tokens = st.slider(
+                "Max Tokens",
+                500, 3000, 1500,
+                key="pplx_tokens",
+                help="응답 길이"
+            )
+            perplexity_temperature = st.slider(
+                "Temperature",
+                0.0, 1.0, 0.2,
+                step=0.1,
+                key="pplx_temp",
+                help="창의성 (낮을수록 일관적)"
+            )
+
+            add_vertical_space(1)
+
+            st.markdown("### 🤖 OpenAI 설정")
+            openai_max_tokens = st.slider(
+                "Max Tokens",
+                500, 4000, 2000,
+                key="openai_tokens",
+                help="분석 길이"
+            )
+            openai_temperature = st.slider(
+                "Temperature",
+                0.0, 1.0, 0.3,
+                step=0.1,
+                key="openai_temp",
+                help="분석 창의성"
+            )
+
+        else:  # PDF 업로드
+            st.markdown("### 📄 버크셔 서한 업로드")
+            uploaded_file = st.file_uploader(
+                "PDF 파일 선택",
+                type=["pdf"],
+                help="워렌 버핏의 투자 철학이 담긴 PDF"
+            )
+
+            if uploaded_file:
+                with open("temp_uploaded.pdf", "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                st.success("✓ PDF 업로드 완료", icon="✅")
+                st.info(f"📄 {uploaded_file.name}")
+            else:
+                st.info("PDF를 업로드하면 버핏의 인사이트가 분석에 반영됩니다.", icon="💡")
+
+        add_vertical_space(2)
+        st.caption("🔒 API 키는 세션 동안만 사용됩니다")
 
     # 메인 영역
-    col1, col2 = st.columns([2, 1])
+    col_main1, col_main2 = st.columns([2, 1])
 
-    with col1:
-        st.subheader("🔍 주식 질문")
-        user_query = st.text_area(
-            "분석하고 싶은 주식에 대해 질문하세요",
-            placeholder="예: What is IREN?\nTesla 주식은 어때?\nApple에 투자해도 될까?",
-            height=150
+    with col_main1:
+        colored_header(
+            label="질문 입력",
+            description="분석하고 싶은 주식에 대해 물어보세요",
+            color_name="blue-70"
         )
 
-    with col2:
-        st.subheader("💡 사용 예시")
-        st.markdown("""
-        - What is NVIDIA?
-        - 삼성전자 주식 분석해줘
-        - Should I invest in Tesla?
-        - Apple의 투자 가치는?
-        - Microsoft 경쟁력 분석
-        """)
+        user_query = st.text_area(
+            "💬 질문을 입력하세요",
+            placeholder="예시:\n• What is NVIDIA?\n• Tesla 주식 분석해줘\n• Should I invest in Apple?\n• Microsoft의 경쟁력은?",
+            height=180,
+            label_visibility="collapsed"
+        )
+
+    with col_main2:
+        colored_header(
+            label="예시 질문",
+            description="참고하세요",
+            color_name="violet-70"
+        )
+
+        examples = [
+            "What is NVIDIA?",
+            "삼성전자 주식 분석",
+            "Should I invest in Tesla?",
+            "Apple의 투자 가치는?",
+            "Microsoft 경쟁력 분석"
+        ]
+
+        for example in examples:
+            if st.button(f"💡 {example}", use_container_width=True, key=f"ex_{example}"):
+                st.session_state.example_query = example
+                st.rerun()
+
+        if hasattr(st.session_state, 'example_query'):
+            user_query = st.session_state.example_query
+            del st.session_state.example_query
+
+    add_vertical_space(1)
 
     # 분석 버튼
-    if st.button("🚀 분석 시작", type="primary", use_container_width=True):
+    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+    with col_btn2:
+        analyze_button = st.button(
+            "🚀 분석 시작하기",
+            type="primary",
+            use_container_width=True
+        )
+
+    if analyze_button:
         if not user_query:
-            st.error("⚠️ 질문을 입력해주세요!")
+            st.error("⚠️ 질문을 입력해주세요!", icon="🚨")
         else:
-            with st.spinner("분석 중... 잠시만 기다려주세요 ⏳"):
+            with st.spinner("🔍 시장 데이터 수집 중..."):
                 try:
-                    # PDF 경로 설정
+                    # 파라미터 가져오기
+                    if 'pplx_tokens' in st.session_state:
+                        perplexity_max_tokens = st.session_state.pplx_tokens
+                        perplexity_temperature = st.session_state.pplx_temp
+                        openai_max_tokens = st.session_state.openai_tokens
+                        openai_temperature = st.session_state.openai_temp
+                    else:
+                        perplexity_max_tokens = 1500
+                        perplexity_temperature = 0.2
+                        openai_max_tokens = 2000
+                        openai_temperature = 0.3
+
                     pdf_path = "temp_uploaded.pdf" if uploaded_file else None
 
-                    # 분석 실행
                     result = st.session_state.agent.analyze_stock(
                         user_query=user_query,
                         pdf_path=pdf_path,
@@ -191,61 +327,97 @@ else:
                         openai_temperature=openai_temperature
                     )
 
-                    # 결과 표시
-                    st.markdown("---")
-                    st.success("✅ 분석 완료!")
+                    add_vertical_space(1)
+                    st.success("✅ 분석 완료!", icon="✨")
 
-                    # 탭으로 구분
-                    tab1, tab2, tab3 = st.tabs(["📋 종합 분석", "🔍 시장 데이터", "📚 버핏 인사이트"])
+                    # 결과 탭
+                    tab1, tab2, tab3 = st.tabs([
+                        "📊 종합 분석",
+                        "🔍 시장 데이터",
+                        "💡 버핏 인사이트"
+                    ])
 
                     with tab1:
-                        st.markdown("### 투자 분석 결과")
-                        st.markdown(result["final_analysis"])
-
-                        # 다운로드 버튼
-                        st.download_button(
-                            "📥 분석 결과 다운로드",
-                            result["final_analysis"],
-                            file_name=f"분석_{user_query[:20]}.txt",
-                            mime="text/plain"
+                        colored_header(
+                            label="투자 분석 결과",
+                            description="AI가 생성한 종합 분석",
+                            color_name="green-70"
                         )
 
+                        st.markdown(result["final_analysis"])
+
+                        add_vertical_space(1)
+
+                        col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
+                        with col_dl2:
+                            st.download_button(
+                                "📥 분석 결과 다운로드",
+                                result["final_analysis"],
+                                file_name=f"분석_{user_query[:20]}.txt",
+                                mime="text/plain",
+                                use_container_width=True
+                            )
+
                     with tab2:
-                        st.markdown("### Perplexity 수집 정보")
-                        st.write(result["market_data"].get("raw_response", "정보 없음"))
+                        colored_header(
+                            label="Perplexity 수집 정보",
+                            description="실시간 시장 데이터",
+                            color_name="blue-70"
+                        )
+
+                        st.markdown(result["market_data"].get("raw_response", "정보 없음"))
 
                         if result["market_data"].get("citations"):
-                            st.markdown("### 📚 출처")
+                            add_vertical_space(1)
+                            st.markdown("### 📚 참고 출처")
                             for i, citation in enumerate(result["market_data"]["citations"], 1):
                                 st.markdown(f"{i}. [{citation}]({citation})")
 
                     with tab3:
-                        st.markdown("### 버크셔 서한 인사이트")
+                        colored_header(
+                            label="버크셔 서한 인사이트",
+                            description="워렌 버핏의 투자 철학",
+                            color_name="orange-70"
+                        )
+
                         if result["buffett_insights"]:
                             for i, insight in enumerate(result["buffett_insights"], 1):
-                                with st.expander(f"💡 인사이트 #{i}"):
-                                    st.write(insight)
+                                with st.expander(f"💡 인사이트 #{i}", expanded=(i == 1)):
+                                    st.markdown(insight)
                         else:
-                            st.info("PDF를 업로드하면 더 많은 인사이트를 확인할 수 있습니다.")
+                            st.info(
+                                "📄 PDF를 업로드하면 버핏의 인사이트를 확인할 수 있습니다.",
+                                icon="💡"
+                            )
 
-                    # 에러 표시
                     if result.get("error"):
-                        st.warning(f"⚠️ 경고: {result['error']}")
+                        st.warning(f"⚠️ {result['error']}", icon="⚠️")
 
                 except Exception as e:
-                    st.error(f"❌ 오류 발생: {str(e)}")
-                    st.info("API 키가 올바른지 확인하거나 로그아웃 후 다시 시도해주세요.")
+                    st.error(f"❌ 오류 발생: {str(e)}", icon="🚨")
+                    st.info("API 키를 확인하거나 로그아웃 후 다시 시도해주세요.", icon="💡")
 
     # 하단 정보
+    add_vertical_space(2)
     st.markdown("---")
-    st.info("""
-    💡 **사용 팁**
-    - 명확한 회사명이나 티커 심볼을 입력하면 더 정확한 분석을 받을 수 있습니다.
-    - 버크셔 서한 PDF를 업로드하면 워렌 버핏의 투자 철학이 반영됩니다.
-    - 파라미터를 조정하여 응답의 창의성과 길이를 조절할 수 있습니다.
-    - 분석 결과는 참고용이며 투자 결정은 본인의 책임입니다.
-    """)
 
-    # 푸터
-    st.markdown("---")
-    st.caption("🔐 귀하의 API 키는 세션 동안만 사용되며 저장되지 않습니다.")
+    with st.expander("💡 사용 팁 & 주의사항", expanded=False):
+        col_tip1, col_tip2 = st.columns(2)
+
+        with col_tip1:
+            st.markdown("""
+            **📌 효과적인 사용법**
+            - 명확한 회사명/티커 심볼 사용
+            - 구체적인 질문으로 정확한 답변 유도
+            - 너무 맹신하지 않기
+            - 파라미터 조정으로 맞춤 분석
+            """)
+
+        with col_tip2:
+            st.markdown("""
+            **⚠️ 주의사항**
+            - 분석 결과는 참고용입니다
+            - 투자 결정은 본인의 책임입니다
+            - 실시간 데이터가 아닐 수 있습니다
+            - API 사용량에 따라 비용 발생
+            """)

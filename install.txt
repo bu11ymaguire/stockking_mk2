@@ -18,3 +18,5 @@ Original file is located at
 !pip install langgraph
 
 !pip install langchain.text_splitter
+
+pip install streamlit-extras streamlit-option-menu streamlit-shadcn-ui
