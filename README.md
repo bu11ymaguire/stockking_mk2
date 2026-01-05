@@ -190,26 +190,6 @@ graph LR
 
 ---
 
-## 🛡️ 보안 주의사항
-
-**절대 커밋하지 마세요:**
-- `.env` 파일
-- API 키가 하드코딩된 파일
-- 개인 PDF 파일
-
-**.gitignore 예시:**
-```gitignore
-.env
-*.pdf
-!stockking.pdf
-__pycache__/
-*.pyc
-.venv/
-.idea/
-```
-
----
-
 ## 📌 주의사항
 
 ⚠️ **투자 책임**
