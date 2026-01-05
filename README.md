@@ -100,6 +100,9 @@ jupyter notebook 주식왕스토킹_MK2.ipynb
 streamlit run streamlit_app.py
 ```
 
+### 5. Streamlit Cloud에서 만나보세요 
+[![Oracle of Omaha](https://img.shields.io/badge/Oracle_of_Omaha-Live_on_Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://oracleofomaha.streamlit.app/)
+
 ---
 
 ## 📁 프로젝트 구조
