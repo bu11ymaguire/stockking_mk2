@@ -2,7 +2,7 @@
 
 **워렌 버핏 스타일 AI 주식 분석기** - RAG 기반 투자 철학 분석 시스템
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-FF4B4B.svg)](https://streamlit.io)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991.svg)](https://openai.com)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -115,7 +115,6 @@ stockking/
 ├── test_agent.py             # 🧪 터미널 테스트 스크립트
 ├── stockking.pdf             # 📄 버크셔 서한 (필수)
 ├── requirements.txt          # 📦 의존성 패키지
-├── .env                      # 🔐 API 키 (git 제외)
 └── README.md                 # 📖 문서
 ```
 
