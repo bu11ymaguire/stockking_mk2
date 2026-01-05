@@ -75,12 +75,7 @@ requests>=2.31.0
 ```
 
 ### 2. API 키 설정
-
-`.env` 파일 생성:
-```env
-OPENAI_API_KEY=sk-...
-PERPLEXITY_API_KEY=pplx-...
-```
+사용자 로그인 형식으로, 보안에 얽매이지 않고 자유롭게 개발.
 
 ### 3. PDF 준비
 
