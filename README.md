@@ -237,7 +237,7 @@ MIT License - 자유롭게 사용, 수정, 배포 가능
 ## 🙏 감사의 글
 
 **Special Thanks:**
-- **[SKT8LL 팀](https://github.com/SKT8LL)** - 본 프로젝트는 [원본 Jupyter Notebook](https://github.com/SKT8LL/stockking)을 Python 웹 애플리케이션으로 발전시킨 버전입니다. 훌륭한 기반 코드를 제공해주셔서 감사합니다! 🙌
+- **[SKT8LL 팀](https://github.com/SKT8LL)** - 본 프로젝트는 [원본 Jupyter Notebook](https://github.com/SKT8LL/stockking)을 Python 웹 애플리케이션으로 발전시킨 버전입니다. 훌륭한 기반 코드를 제공해주신 팀장님 감사합니다! 🙌
 
 **Powered by:**
 - **Warren Buffett**: 투자 철학 제공
