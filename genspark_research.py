@@ -164,27 +164,48 @@ _KR_NAME_TO_TICKER = {
 def extract_ticker(query: str) -> Optional[str]:
     """
     사용자 질문에서 티커 후보를 추출.
-    1) 대문자 2-5자 시퀀스 우선
-    2) 한국어 종목명 매핑
-    3) 못 찾으면 None
+    1) 한국어 종목명 매핑 (우선)
+    2) 대문자 2-5자 시퀀스
+    3) 소문자도 시도 (사용자가 'ionq', 'tsla'처럼 칠 수 있음)
     """
     if not query:
         return None
 
-    query_lower = query.lower().replace(" ", "")
-    # 한국어 매핑
+    query_clean = query.strip()
+    query_lower = query_clean.lower().replace(" ", "")
+
+    # 1) 한국어 매핑
     for kr, ticker in _KR_NAME_TO_TICKER.items():
         if kr.lower() in query_lower:
             return ticker
 
-    # 대문자 티커 추출 (일반 단어 제외)
+    # 2) 대문자 티커 추출 (일반 단어 제외)
     blacklist = {
-        "AI", "CEO", "CFO", "ETF", "IPO", "USA", "USD", "AMD",  # AMD는 진짜 티커이긴 함
+        "AI", "CEO", "CFO", "ETF", "IPO", "USA", "USD",
         "ROE", "ROI", "FCF", "GDP", "API", "RAG", "PDF",
+        "ONLY", "WHAT", "HOW", "WHY", "WHEN", "WHO",
     }
-    candidates = [t for t in _TICKER_PATTERN.findall(query) if t not in blacklist]
+    candidates = [t for t in _TICKER_PATTERN.findall(query_clean) if t not in blacklist]
     if candidates:
         return candidates[0]
+
+    # 3) 소문자 시도: 영문 2-5자 토큰을 대문자로 올려서 시도
+    #    예: "ionq 분석", "tsla 어때?" → IONQ, TSLA
+    lower_pattern = re.compile(r"\b([a-zA-Z]{2,5})\b")
+    for token in lower_pattern.findall(query_clean):
+        upper = token.upper()
+        if upper in blacklist:
+            continue
+        # 한국어/영어 일반 단어 필터 (분석, 어때, what 등 짧은 단어 제외)
+        common_words = {
+            "분석", "어때", "주식", "투자", "사야", "지금", "가치",
+            "the", "and", "for", "but", "you", "are", "buy", "sell",
+            "is", "it", "to", "of", "in", "on", "at",
+        }
+        if token.lower() in common_words:
+            continue
+        return upper
+
     return None
 
 
