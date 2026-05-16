@@ -65,7 +65,7 @@ graph LR
     B --> B2[gsk search<br/>정성 정보]
     B1 --> C[RAG 검색<br/>버크셔 서한]
     B2 --> C
-    C --> D[Gemini 2.0 Flash<br/>버핏 헌법 + 분석]
+    C --> D[Gemini 2.5 Flash<br/>버핏 헌법 + 분석]
     D --> E[5점 척도 평가<br/>+ 면책 문구]
     style D fill:#4285F4,color:#fff
 ```
@@ -199,7 +199,7 @@ agent = InvestmentAgent(
 
 result = agent.analyze_stock(
     user_query="What is NVIDIA?",
-    openai_max_tokens=2000,    # Gemini max output tokens (이름은 하위 호환)
+    openai_max_tokens=6000,    # Gemini max output tokens (이름은 하위 호환)
     openai_temperature=0.3
 )
 
@@ -223,7 +223,7 @@ PDF 처리 과정 점검 + 인터랙티브 분석.
 ### 분석 파라미터
 
 **Gemini 설정** (Streamlit 사이드바):
-- `max_tokens`: 500~4000 (기본 2000) — 분석 답변 길이
+- `max_tokens`: 1000~8000 (기본 6000) — 분석 답변 길이. 한국어는 토큰을 많이 소비하므로 4000 이상 권장
 - `temperature`: 0.0~1.0 (기본 0.3) — 낮을수록 보수적/일관적
 
 ### 한국어 종목 매핑 추가
@@ -263,8 +263,9 @@ embeddings = HuggingFaceEmbeddings(
 - 실제 투자 결정은 본인의 책임입니다
 - 액션 권고 (매수/매도)는 의도적으로 출력하지 않습니다
 
-### ⚠️ API 한도
-- **Gemini 2.0 Flash**: 분당 15회, 일일 1,500회 (무료)
+### ⚠️ API 한도 (2026년 4월 기준)
+- **Gemini 2.5 Flash**: 분당 10회, 일일 1,500회, 분당 25만 토큰 (무료)
+- **임베딩**: 로컬 모델 사용으로 한도 없음
 - **Genspark**: 계정별 크레딧 한도
 - 한도 초과 시 1분 대기 후 재시도
 
@@ -332,7 +333,7 @@ MIT License — 자유롭게 사용, 수정, 배포 가능
 
 **Powered by:**
 - **Warren Buffett & Berkshire Hathaway** — 투자 철학 제공
-- **Google Gemini** — 2.0 Flash 분석 모델
+- **Google Gemini** — 2.5 Flash 분석 모델
 - **Genspark** — 실시간 재무 데이터 + 웹 검색
 - **HuggingFace Sentence Transformers** — 다국어 로컬 임베딩
 - **LangChain + LangGraph** — RAG 프레임워크 + 워크플로우
