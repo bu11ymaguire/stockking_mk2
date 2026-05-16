@@ -211,7 +211,7 @@ else:
             st.markdown("### 🤖 Gemini 분석 설정")
             openai_max_tokens = st.slider(
                 "Max Tokens",
-                500, 4000, 2000,
+                1000, 8000, 4000,
                 key="openai_tokens",
                 help="분석 길이"
             )

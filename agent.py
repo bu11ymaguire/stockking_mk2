@@ -1,4 +1,15 @@
 import os
+import sys
+
+# Windows cp949 콘솔에서 이모지 출력 시 UnicodeEncodeError 방지
+# (streamlit subprocess에서 print 호출이 터지는 걸 막음)
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass  # 이미 UTF-8이거나 reconfigure 불가능한 경우
+
 from datetime import datetime
 from typing import TypedDict, List
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -369,7 +380,7 @@ class InvestmentAgent:
         pdf_path: str = None,
         perplexity_max_tokens: int = 1500,
         perplexity_temperature: float = 0.2,
-        openai_max_tokens: int = 2000,
+        openai_max_tokens: int = 4000,
         openai_temperature: float = 0.3
     ):
         """주식 분석 실행"""
@@ -377,10 +388,14 @@ class InvestmentAgent:
         print("🎯 버핏 스타일 주식 분석 시작")
         print("=" * 60)
 
-        print(f"pdf path: {pdf_path if pdf_path else 'None (RAG 비활성화)'}")
+        # RAG 상태 안내 (혼란스러운 메시지 개선)
         if pdf_path:
-            # 같은 PDF면 캐시 사용 (재임베딩 비용 절감)
-            self.initialize_rag(pdf_path)
+            print(f"📄 PDF 추가 로드 요청: {pdf_path}")
+            self.initialize_rag(pdf_path)  # 같은 PDF면 캐시 사용
+        elif self.vector_store is not None:
+            print(f"📄 RAG 활성화됨 (기존 캐시 사용: {self._current_pdf_path})")
+        else:
+            print("📄 RAG 비활성화 (PDF 미설정)")
 
         app = self.create_workflow()
 

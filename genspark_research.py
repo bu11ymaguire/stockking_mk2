@@ -22,7 +22,16 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from typing import Optional
+
+# Windows cp949 콘솔에서 이모지 출력 시 UnicodeEncodeError 방지
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass
 
 
 def _find_gsk() -> str:
