@@ -3,11 +3,23 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
+from dotenv import load_dotenv
 import os
+import sys
 
-# API 키 설정
-OPENAI_API_KEY = "your-openai-key-here"
-PERPLEXITY_API_KEY = "your-perplexity-key-here"
+# .env 파일에서 API 키 로드
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+
+if not OPENAI_API_KEY or not PERPLEXITY_API_KEY:
+    print("❌ API 키가 설정되지 않았습니다.")
+    print("   프로젝트 루트에 .env 파일을 만들고 다음을 추가하세요:")
+    print("     OPENAI_API_KEY=sk-...")
+    print("     PERPLEXITY_API_KEY=pplx-...")
+    print("   (.env.example 파일을 참고하세요)")
+    sys.exit(1)
 
 
 def check_pdf_file(pdf_path: str):

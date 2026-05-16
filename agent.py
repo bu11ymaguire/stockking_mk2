@@ -75,7 +75,7 @@ Only use information from reliable financial sources."""
                 "Content-Type": "application/json"
             }
 
-            response = requests.post(url, json=payload, headers=headers)
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
 
             result = response.json()

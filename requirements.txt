@@ -1,9 +1,12 @@
 streamlit>=1.28.0
 streamlit-extras>=0.3.0
 streamlit-option-menu>=0.3.6
+streamlit-shadcn-ui>=0.1.0
 langchain>=0.1.0
 langchain-openai>=0.0.2
 langchain-community>=0.0.10
+langchain-text-splitters>=0.0.1
+langgraph>=0.0.40
 faiss-cpu>=1.7.4
 pypdf>=3.17.0
 python-dotenv>=1.0.0
