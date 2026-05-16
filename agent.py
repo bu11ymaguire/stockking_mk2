@@ -317,7 +317,10 @@ class InvestmentAgent:
 
         try:
             llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash-exp",  # 최신 빠른 모델 (무료 티어 사용 가능)
+                # Gemini 2.5 Flash: 2026년 기준 무료 티어 최신 정식 모델
+                # 한도: 분당 10회, 일일 1,500회, 분당 25만 토큰 (학습용 충분)
+                # 2.0보다 추론 품질 ↑, Pro 대비 한도 ↑
+                model="gemini-2.5-flash",
                 temperature=temperature,
                 max_output_tokens=max_tokens,
                 google_api_key=self.google_api_key,

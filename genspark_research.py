@@ -18,13 +18,49 @@ Perplexity API를 대체한다.
 """
 
 import json
+import os
 import re
 import shutil
 import subprocess
 from typing import Optional
 
 
-GSK_CMD = shutil.which("gsk") or "gsk"  # PATH에서 찾되 없으면 그대로 시도
+def _find_gsk() -> str:
+    """gsk CLI 실행파일을 찾는다. PATH 우선, 없으면 알려진 위치 탐색."""
+    # 1) PATH 검색 (.cmd, .exe 자동 인식)
+    found = shutil.which("gsk")
+    if found:
+        return found
+
+    # 2) 환경변수 GSK_PATH 우선
+    if env_path := os.environ.get("GSK_PATH"):
+        if os.path.exists(env_path):
+            return env_path
+
+    # 3) Genspark Claw bundled location (Windows)
+    appdata = os.environ.get("APPDATA", "")
+    candidates = [
+        os.path.join(
+            appdata,
+            "Genspark Claw",
+            "bundled-resources",
+            "openclaw",
+            "node_modules",
+            ".bin",
+            "gsk.cmd",
+        ),
+        # npm global 기본 위치
+        os.path.join(appdata, "npm", "gsk.cmd"),
+        os.path.join(os.environ.get("USERPROFILE", ""), "AppData", "Roaming", "npm", "gsk.cmd"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+
+    return "gsk"  # 최후의 수단 (실패 시 명확한 에러 메시지 나옴)
+
+
+GSK_CMD = _find_gsk()
 
 
 class GenSparkError(Exception):
@@ -33,18 +69,37 @@ class GenSparkError(Exception):
 
 def _run_gsk(args: list[str], timeout: int = 120) -> dict:
     """gsk 명령을 실행하고 JSON 결과를 반환한다."""
+    # Windows .cmd 파일은 shell=True가 필요한 경우가 있음
+    use_shell = GSK_CMD.lower().endswith(".cmd") or GSK_CMD.lower().endswith(".bat")
+
     try:
-        result = subprocess.run(
-            [GSK_CMD, *args],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            encoding="utf-8",
-            errors="replace",
-        )
+        if use_shell:
+            # 인자에 공백 들어가는 경우 따옴표로 감싸기
+            quoted_args = [f'"{a}"' if " " in a else a for a in args]
+            cmd_str = f'"{GSK_CMD}" {" ".join(quoted_args)}'
+            result = subprocess.run(
+                cmd_str,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+            )
+        else:
+            result = subprocess.run(
+                [GSK_CMD, *args],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+            )
     except FileNotFoundError as e:
         raise GenSparkError(
-            "gsk CLI를 찾을 수 없습니다. 'gsk --help'로 설치 확인하세요."
+            f"gsk CLI를 찾을 수 없습니다 (경로 시도: {GSK_CMD}). "
+            f"'gsk --help'로 설치 확인하거나, "
+            f"환경변수 GSK_PATH에 절대경로를 지정하세요."
         ) from e
     except subprocess.TimeoutExpired as e:
         raise GenSparkError(f"gsk 명령 타임아웃 ({timeout}s): {' '.join(args)}") from e

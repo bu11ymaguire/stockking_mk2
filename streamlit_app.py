@@ -76,7 +76,7 @@ if not st.session_state.logged_in:
 
             st.info(
                 "💡 시장 데이터는 Genspark CLI(`gsk`)로 수집하고, "
-                "분석은 Google Gemini 2.0 Flash 모델로 처리합니다. "
+                "분석은 Google Gemini 2.5 Flash 모델로 처리합니다. "
                 "OpenAI/Perplexity 키 모두 불필요!",
                 icon="✨"
             )
