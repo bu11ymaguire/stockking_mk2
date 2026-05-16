@@ -1,5 +1,4 @@
 import os
-import requests
 from datetime import datetime
 from typing import TypedDict, List
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -8,10 +7,8 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import StateGraph, END
 
-from buffett_philosophy import (
-    PERPLEXITY_SYSTEM_PROMPT,
-    build_buffett_constitution,
-)
+from buffett_philosophy import build_buffett_constitution
+from genspark_research import research as genspark_research
 
 
 class InvestmentState(TypedDict):
@@ -27,9 +24,15 @@ class InvestmentState(TypedDict):
 
 
 class InvestmentAgent:
-    def __init__(self, openai_api_key: str, perplexity_api_key: str, pdf_path: str = None):
+    def __init__(self, openai_api_key: str, perplexity_api_key: str = "", pdf_path: str = None):
+        """
+        Args:
+            openai_api_key: GPT-4o 분석용 필수 키
+            perplexity_api_key: [Deprecated] Genspark CLI로 대체됨. 무시.
+            pdf_path: 버크셔 서한 PDF 경로 (옵션)
+        """
         self.openai_api_key = openai_api_key
-        self.perplexity_api_key = perplexity_api_key
+        self.perplexity_api_key = perplexity_api_key  # 하위 호환만 유지
         self.vector_store = None
         self._current_pdf_path = None  # 캐싱: 같은 PDF면 재초기화 안 함
 
@@ -38,66 +41,55 @@ class InvestmentAgent:
             print(f"🔧 에이전트 초기화 시 RAG 설정: {pdf_path}")
             self.initialize_rag(pdf_path)
 
-    def perplexity_research_node(self, state: InvestmentState) -> InvestmentState:
-        """Perplexity API로 정보 수집"""
-        user_query = state["user_query"]
-        max_tokens = state.get("perplexity_max_tokens", 1500)
-        temperature = state.get("perplexity_temperature", 0.2)
+    def genspark_research_node(self, state: InvestmentState) -> InvestmentState:
+        """
+        Genspark CLI(`gsk`)로 정량 데이터 + 정성 정보 수집.
+        Perplexity API 의존 제거 — 별도 키 발급 불필요.
 
-        print(f"🔍 Perplexity로 정보 수집 중: '{user_query}'")
-        print(f"   📊 설정: max_tokens={max_tokens}, temperature={temperature}")
+        - gsk stock_price: P/E, ROE, ROIC, FCF, DCF 등 핵심 재무 지표
+        - gsk search: 최신 뉴스/분석 + 시장의 주요 관심사
+        """
+        user_query = state["user_query"]
+        print(f"🔍 Genspark로 리서치 중: '{user_query}'")
 
         try:
-            url = "https://api.perplexity.ai/chat/completions"
-            today = datetime.now().strftime("%Y-%m-%d")
+            result = genspark_research(user_query)
 
-            payload = {
-                "model": "sonar-pro",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": PERPLEXITY_SYSTEM_PROMPT + f"\n\nToday's date: {today}"
-                    },
-                    {"role": "user", "content": user_query}
-                ],
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "return_citations": True,
-                "search_domain_filter": [
-                    "bloomberg.com", "reuters.com", "wsj.com",
-                    "finance.yahoo.com", "investing.com", "seekingalpha.com",
-                    "sec.gov", "ft.com"
+            citations = []
+            if result.get("web_research"):
+                citations = [
+                    r["url"] for r in result["web_research"]["results"] if r.get("url")
                 ]
-            }
 
-            headers = {
-                "Authorization": f"Bearer {self.perplexity_api_key}",
-                "Content-Type": "application/json"
-            }
-
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            result = response.json()
             market_data = {
-                "raw_response": result["choices"][0]["message"]["content"],
-                "citations": result.get("citations", []),
-                "user_query": user_query
+                "raw_response": result["summary_text"],
+                "citations": citations,
+                "ticker": result.get("ticker"),
+                "user_query": user_query,
+                "_errors": result.get("errors", []),
             }
 
-            print(f"✓ Perplexity 정보 수집 완료")
+            if result.get("errors"):
+                print(f"⚠️ 일부 데이터 수집 실패: {result['errors']}")
+
+            print(f"✓ Genspark 리서치 완료 (티커: {result.get('ticker') or '미식별'})")
             return {**state, "market_data": market_data}
 
         except Exception as e:
-            print(f"❌ Perplexity API 오류: {str(e)}")
+            print(f"❌ Genspark 리서치 오류: {str(e)}")
             return {
                 **state,
                 "market_data": {
                     "raw_response": f"정보 수집 실패: {str(e)}",
-                    "user_query": user_query
+                    "user_query": user_query,
                 },
-                "error": str(e)
+                "error": str(e),
             }
+
+    # 하위 호환: 기존 이름으로도 호출 가능 (Streamlit/main.py가 옛 이름 쓰는 경우)
+    def perplexity_research_node(self, state: InvestmentState) -> InvestmentState:
+        """[Deprecated] genspark_research_node로 위임."""
+        return self.genspark_research_node(state)
 
     def initialize_rag(self, pdf_path: str, force: bool = False):
         """RAG 시스템 초기화. 동일 PDF면 재구축 생략 (force=True로 강제)."""
@@ -332,15 +324,15 @@ class InvestmentAgent:
             }
 
     def create_workflow(self):
-        """워크플로우 생성"""
+        """워크플로우 생성: Genspark 리서치 → RAG → OpenAI 분석."""
         workflow = StateGraph(InvestmentState)
 
-        workflow.add_node("perplexity_research", self.perplexity_research_node)
+        workflow.add_node("research", self.genspark_research_node)
         workflow.add_node("rag_wisdom", self.rag_buffett_wisdom_node)
         workflow.add_node("openai_analysis", self.openai_analysis_node)
 
-        workflow.set_entry_point("perplexity_research")
-        workflow.add_edge("perplexity_research", "rag_wisdom")
+        workflow.set_entry_point("research")
+        workflow.add_edge("research", "rag_wisdom")
         workflow.add_edge("rag_wisdom", "openai_analysis")
         workflow.add_edge("openai_analysis", END)
 

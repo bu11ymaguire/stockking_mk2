@@ -74,11 +74,10 @@ if not st.session_state.logged_in:
 
             add_vertical_space(1)
 
-            perplexity_key = st.text_input(
-                "🔍 Perplexity API Key",
-                type="password",
-                placeholder="pplx-...",
-                help="https://www.perplexity.ai/settings/api"
+            st.info(
+                "💡 시장 데이터는 Genspark CLI(`gsk`)로 수집합니다. "
+                "Perplexity API 키 없이도 사용 가능합니다.",
+                icon="✨"
             )
 
             add_vertical_space(2)
@@ -92,8 +91,8 @@ if not st.session_state.logged_in:
                 )
 
             if submit_button:
-                if not openai_key or not perplexity_key:
-                    st.error("⚠️ 모든 API 키를 입력해주세요!", icon="🚨")
+                if not openai_key:
+                    st.error("⚠️ OpenAI API 키를 입력해주세요!", icon="🚨")
                 else:
                     try:
                         with st.spinner("로그인 중..."):
@@ -102,7 +101,6 @@ if not st.session_state.logged_in:
 
                             agent = InvestmentAgent(
                                 openai_api_key=openai_key,
-                                perplexity_api_key=perplexity_key,
                                 pdf_path=pdf_path
                             )
                             st.session_state.agent = agent
