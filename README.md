@@ -328,7 +328,7 @@ MIT License — 자유롭게 사용, 수정, 배포 가능
 ## 🙏 감사의 글
 
 **Special Thanks:**
-- **[SKT8LL 팀](https://github.com/SKT8LL)** — 원본 Jupyter Notebook을 Python 웹 애플리케이션으로 발전시킨 버전입니다.
+- **[SKT8LL 팀](https://github.com/SKT8LL)** — 초기 버전을 만드는데 많은 도움을 받았습니다.
 
 **Powered by:**
 - **Warren Buffett & Berkshire Hathaway** — 투자 철학 제공

@@ -186,7 +186,7 @@ else:
         uploaded_file = None
         perplexity_max_tokens = 1500
         perplexity_temperature = 0.2
-        openai_max_tokens = 4000  # 한글 분석은 토큰 많이 먹음
+        openai_max_tokens = 6000  # 한글 분석은 토큰 많이 먹음
         openai_temperature = 0.3
 
         if selected == "🎛️ 파라미터":
@@ -211,7 +211,7 @@ else:
             st.markdown("### 🤖 Gemini 분석 설정")
             openai_max_tokens = st.slider(
                 "Max Tokens",
-                1000, 8000, 4000,
+                1000, 8000, 6000,
                 key="openai_tokens",
                 help="분석 길이"
             )
@@ -309,7 +309,7 @@ else:
                     else:
                         perplexity_max_tokens = 1500
                         perplexity_temperature = 0.2
-                        openai_max_tokens = 4000
+                        openai_max_tokens = 6000
                         openai_temperature = 0.3
 
                     pdf_path = "temp_uploaded.pdf" if uploaded_file else None

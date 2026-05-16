@@ -380,7 +380,7 @@ class InvestmentAgent:
         pdf_path: str = None,
         perplexity_max_tokens: int = 1500,
         perplexity_temperature: float = 0.2,
-        openai_max_tokens: int = 4000,
+        openai_max_tokens: int = 6000,
         openai_temperature: float = 0.3
     ):
         """주식 분석 실행"""
