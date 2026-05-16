@@ -1,7 +1,8 @@
 import os
 from datetime import datetime
 from typing import TypedDict, List
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -127,11 +128,14 @@ class InvestmentAgent:
         )
         splits = text_splitter.split_documents(documents)
 
-        # api_key 명시적 전달 (env 의존 제거)
-        # Gemini 임베딩 모델 사용 — 무료, 768차원
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=self.google_api_key,
+        # 로컬 임베딩 모델 사용 (Gemini 무료 한도 우회)
+        # 첫 실행 시 ~400MB 다운로드, 이후엔 캐시됨
+        # 영어+한국어 모두 지원하는 다국어 모델
+        print("   🧮 로컬 임베딩 모델 로딩 중 (첫 실행 시 다운로드)...")
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
         )
         self.vector_store = FAISS.from_documents(splits, embeddings)
         self._current_pdf_path = pdf_path

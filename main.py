@@ -1,7 +1,7 @@
 from agent import InvestmentAgent
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import os
@@ -135,9 +135,10 @@ def inspect_pdf_processing(pdf_path: str, google_api_key: str):
     # 3. 벡터화 및 검색 테스트
     print("\n[3단계] 벡터 스토어 생성 및 검색 테스트...")
     try:
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
-            google_api_key=google_api_key,
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
         )
         print("   임베딩 생성 중...")
         vector_store_test = FAISS.from_documents(splits, embeddings)
