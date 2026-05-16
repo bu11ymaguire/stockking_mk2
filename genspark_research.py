@@ -218,17 +218,47 @@ def fetch_stock_data(ticker: str) -> dict:
     """
     gsk stock_price로 정량 데이터 수집.
     반환: profile, metrics, ratios만 추려서 반환 (historical은 너무 큼).
+
+    gsk 응답 구조 (2026년 5월 기준):
+      - data: list[historical OHLCV] (사용 안 함)
+      - session_state.profile: dict (회사 정보)
+      - session_state.metrics: dict (지표 요약)
+      - session_state.ratios: list[1] (재무 비율 dict 1개)
+      - session_state.stock_data.profile: 동일 (백업)
     """
     raw = _run_gsk(["stock_price", ticker])
     if raw.get("status") != "ok":
         raise GenSparkError(f"stock_price 실패: {raw.get('message')}")
 
-    data = raw.get("data", {})
+    # 데이터는 session_state 안에 있음 (구버전 호환을 위해 data도 fallback으로 시도)
+    ss = raw.get("session_state") or {}
+    data = raw.get("data")
+    data_dict = data if isinstance(data, dict) else {}  # data가 list면 무시
+
+    # profile: session_state > data > stock_data
+    profile = (
+        ss.get("profile")
+        or data_dict.get("profile")
+        or ss.get("stock_data", {}).get("profile")
+        or {}
+    )
+
+    metrics = ss.get("metrics") or data_dict.get("metrics") or {}
+
+    # ratios는 list[1] 구조 — 첫 원소를 dict로
+    ratios_raw = ss.get("ratios") or data_dict.get("ratios") or []
+    if isinstance(ratios_raw, list):
+        ratios = ratios_raw[0] if ratios_raw else {}
+    elif isinstance(ratios_raw, dict):
+        ratios = ratios_raw
+    else:
+        ratios = {}
+
     return {
         "ticker": ticker,
-        "profile": data.get("profile", {}),
-        "metrics": data.get("metrics", {}),
-        "ratios": (data.get("ratios") or [{}])[0],  # 최신 1개만
+        "profile": profile,
+        "metrics": metrics,
+        "ratios": ratios,
     }
 
 
