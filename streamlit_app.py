@@ -65,18 +65,19 @@ if not st.session_state.logged_in:
         add_vertical_space(1)
 
         with st.form("login_form"):
-            openai_key = st.text_input(
-                "🤖 OpenAI API Key",
+            google_key = st.text_input(
+                "🤖 Google Gemini API Key",
                 type="password",
-                placeholder="sk-...",
-                help="https://platform.openai.com/api-keys"
+                placeholder="AIza...",
+                help="https://aistudio.google.com/apikey — 무료 티어 사용 가능"
             )
 
             add_vertical_space(1)
 
             st.info(
-                "💡 시장 데이터는 Genspark CLI(`gsk`)로 수집합니다. "
-                "Perplexity API 키 없이도 사용 가능합니다.",
+                "💡 시장 데이터는 Genspark CLI(`gsk`)로 수집하고, "
+                "분석은 Google Gemini 2.0 Flash 모델로 처리합니다. "
+                "OpenAI/Perplexity 키 모두 불필요!",
                 icon="✨"
             )
 
@@ -91,8 +92,8 @@ if not st.session_state.logged_in:
                 )
 
             if submit_button:
-                if not openai_key:
-                    st.error("⚠️ OpenAI API 키를 입력해주세요!", icon="🚨")
+                if not google_key:
+                    st.error("⚠️ Gemini API 키를 입력해주세요!", icon="🚨")
                 else:
                     try:
                         with st.spinner("로그인 중..."):
@@ -100,7 +101,7 @@ if not st.session_state.logged_in:
                             pdf_path = default_pdf if os.path.exists(default_pdf) else None
 
                             agent = InvestmentAgent(
-                                openai_api_key=openai_key,
+                                google_api_key=google_key,
                                 pdf_path=pdf_path
                             )
                             st.session_state.agent = agent
@@ -117,25 +118,21 @@ if not st.session_state.logged_in:
         add_vertical_space(2)
 
         with st.expander("💡 API 키 발급 가이드", expanded=False):
-            col_guide1, col_guide2 = st.columns(2)
+            st.markdown("""
+            ### 🤖 Google Gemini API Key (무료!)
+            1. [Google AI Studio](https://aistudio.google.com/apikey) 접속
+            2. 구글 계정으로 로그인
+            3. **"Create API key"** 클릭
+            4. 새 프로젝트 선택 또는 기존 프로젝트 사용
+            5. 생성된 키 (AIza...로 시작) 복사 → 위 입력란에 붙여넣기
 
-            with col_guide1:
-                st.markdown("""
-                **🤖 OpenAI API Key**
-                1. platform.openai.com 접속
-                2. 회원가입/로그인
-                3. API Keys 메뉴에서 생성
-                4. 크레딧 충전 필요
-                """)
+            ### 💰 무료 티어 한도 (Gemini 2.0 Flash)
+            - **1분당 15회 요청** (RPM)
+            - **일일 1,500회 요청** (RPD)
+            - **분당 100만 토큰** (TPM)
 
-            with col_guide2:
-                st.markdown("""
-                **🔍 Perplexity API Key**
-                1. perplexity.ai 접속
-                2. 회원가입/로그인
-                3. Settings → API
-                4. 새 키 생성
-                """)
+            학습/개인 사용엔 충분합니다. 신용카드 등록 불필요!
+            """)
 
             st.warning("⚠️ API 키는 안전하게 보관하고 절대 공유하지 마세요!", icon="🔒")
 
@@ -193,24 +190,25 @@ else:
         openai_temperature = 0.3
 
         if selected == "🎛️ 파라미터":
-            st.markdown("### 🔍 Perplexity 설정")
+            st.markdown("### 🔍 리서치 설정 (Genspark)")
+            st.caption("정량 데이터는 자동 수집됩니다. 아래는 호환용 슬라이더 (현재는 사용 안 함).")
             perplexity_max_tokens = st.slider(
-                "Max Tokens",
+                "Max Tokens (참고용)",
                 500, 3000, 1500,
                 key="pplx_tokens",
-                help="응답 길이"
+                help="현재는 Genspark CLI가 자동 처리"
             )
             perplexity_temperature = st.slider(
-                "Temperature",
+                "Temperature (참고용)",
                 0.0, 1.0, 0.2,
                 step=0.1,
                 key="pplx_temp",
-                help="창의성 (낮을수록 일관적)"
+                help="현재는 Genspark CLI가 자동 처리"
             )
 
             add_vertical_space(1)
 
-            st.markdown("### 🤖 OpenAI 설정")
+            st.markdown("### 🤖 Gemini 분석 설정")
             openai_max_tokens = st.slider(
                 "Max Tokens",
                 500, 4000, 2000,
@@ -358,7 +356,7 @@ else:
 
                     with tab2:
                         colored_header(
-                            label="Perplexity 수집 정보",
+                            label="Genspark 수집 정보",
                             description="실시간 시장 데이터",
                             color_name="blue-70"
                         )

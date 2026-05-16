@@ -10,11 +10,11 @@ def main():
     print("=" * 60)
 
     # API 키 입력받기
-    openai_api_key = input("\n🔑 OpenAI API 키를 입력하세요: ").strip()
-    perplexity_api_key = input("🔑 Perplexity API 키를 입력하세요: ").strip()
+    google_api_key = input("\n🔑 Google Gemini API 키를 입력하세요: ").strip()
 
-    if not openai_api_key or not perplexity_api_key:
-        print("❌ API 키를 모두 입력해야 합니다.")
+    if not google_api_key:
+        print("❌ Gemini API 키를 입력해야 합니다.")
+        print("   발급: https://aistudio.google.com/apikey  (무료)")
         return
 
     # PDF 파일 경로 입력
@@ -33,8 +33,8 @@ def main():
     # 에이전트 초기화
     try:
         agent = InvestmentAgent(
-            openai_api_key=openai_api_key,
-            perplexity_api_key=perplexity_api_key
+            google_api_key=google_api_key,
+            pdf_path=pdf_path,
         )
         print("\n✓ 에이전트 초기화 성공")
     except Exception as e:
@@ -53,38 +53,29 @@ def main():
         print(f"기본 질문 사용: {user_query}")
 
     # 파라미터 설정
-    print("\n⚙️ 파라미터 설정 (Enter 키로 기본값 사용)")
+    print("\n⚙️ Gemini 파라미터 설정 (Enter 키로 기본값 사용)")
 
     try:
-        perplexity_max_tokens = input("Perplexity max_tokens (기본: 1500): ").strip()
-        perplexity_max_tokens = int(perplexity_max_tokens) if perplexity_max_tokens else 1500
+        gemini_max_tokens = input("max_tokens (기본: 2000): ").strip()
+        gemini_max_tokens = int(gemini_max_tokens) if gemini_max_tokens else 2000
 
-        perplexity_temperature = input("Perplexity temperature (기본: 0.2): ").strip()
-        perplexity_temperature = float(perplexity_temperature) if perplexity_temperature else 0.2
-
-        openai_max_tokens = input("OpenAI max_tokens (기본: 2000): ").strip()
-        openai_max_tokens = int(openai_max_tokens) if openai_max_tokens else 2000
-
-        openai_temperature = input("OpenAI temperature (기본: 0.3): ").strip()
-        openai_temperature = float(openai_temperature) if openai_temperature else 0.3
+        gemini_temperature = input("temperature (기본: 0.3): ").strip()
+        gemini_temperature = float(gemini_temperature) if gemini_temperature else 0.3
     except ValueError as e:
         print(f"⚠️ 잘못된 입력입니다. 기본값을 사용합니다: {e}")
-        perplexity_max_tokens = 1500
-        perplexity_temperature = 0.2
-        openai_max_tokens = 2000
-        openai_temperature = 0.3
+        gemini_max_tokens = 2000
+        gemini_temperature = 0.3
 
     # 분석 실행
     print("\n🚀 분석을 시작합니다...\n")
 
     try:
+        # 키 이름은 하위 호환 (analyze_stock 시그니처)
         result = agent.analyze_stock(
             user_query=user_query,
             pdf_path=pdf_path,
-            perplexity_max_tokens=perplexity_max_tokens,
-            perplexity_temperature=perplexity_temperature,
-            openai_max_tokens=openai_max_tokens,
-            openai_temperature=openai_temperature
+            openai_max_tokens=gemini_max_tokens,
+            openai_temperature=gemini_temperature,
         )
 
         # 결과 요약

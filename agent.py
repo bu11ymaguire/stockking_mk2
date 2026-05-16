@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from typing import TypedDict, List
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -24,14 +24,22 @@ class InvestmentState(TypedDict):
 
 
 class InvestmentAgent:
-    def __init__(self, openai_api_key: str, perplexity_api_key: str = "", pdf_path: str = None):
+    def __init__(self, google_api_key: str = "", openai_api_key: str = "",
+                 perplexity_api_key: str = "", pdf_path: str = None):
         """
         Args:
-            openai_api_key: GPT-4o 분석용 필수 키
+            google_api_key: Gemini API 키 (필수). https://aistudio.google.com/apikey
+            openai_api_key: [Deprecated] 하위 호환. google_api_key가 없으면 이 자리에 Gemini 키를 받아준다.
             perplexity_api_key: [Deprecated] Genspark CLI로 대체됨. 무시.
             pdf_path: 버크셔 서한 PDF 경로 (옵션)
         """
-        self.openai_api_key = openai_api_key
+        # 하위 호환: 옛 호출이 openai_api_key 자리에 Gemini 키를 넘긴 경우도 수용
+        self.google_api_key = google_api_key or openai_api_key
+        if not self.google_api_key:
+            raise ValueError(
+                "Gemini API 키가 필요합니다. "
+                "https://aistudio.google.com/apikey 에서 발급하세요."
+            )
         self.perplexity_api_key = perplexity_api_key  # 하위 호환만 유지
         self.vector_store = None
         self._current_pdf_path = None  # 캐싱: 같은 PDF면 재초기화 안 함
@@ -119,8 +127,12 @@ class InvestmentAgent:
         )
         splits = text_splitter.split_documents(documents)
 
-        # api_key 명시적 전달 (os.environ 의존 제거)
-        embeddings = OpenAIEmbeddings(api_key=self.openai_api_key)
+        # api_key 명시적 전달 (env 의존 제거)
+        # Gemini 임베딩 모델 사용 — 무료, 768차원
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004",
+            google_api_key=self.google_api_key,
+        )
         self.vector_store = FAISS.from_documents(splits, embeddings)
         self._current_pdf_path = pdf_path
 
@@ -176,15 +188,15 @@ class InvestmentAgent:
         print(f"✓ {len(insights)}개 인사이트 추출 완료 ({len(seen_pages)}개 중복 제거)")
         return {**state, "buffett_insights": insights}
 
-    def openai_analysis_node(self, state: InvestmentState) -> InvestmentState:
-        """버핏 헌법을 system prompt로 주입하고, RAG/Perplexity 결과를 토대로 분석."""
+    def gemini_analysis_node(self, state: InvestmentState) -> InvestmentState:
+        """버핏 헌법을 system prompt로 주입하고, RAG/시장 데이터를 토대로 Gemini가 분석."""
         user_query = state["user_query"]
         market_data = state["market_data"]
         buffett_insights = state["buffett_insights"]
-        max_tokens = state.get("openai_max_tokens", 2000)
+        max_tokens = state.get("openai_max_tokens", 2000)  # 키 이름은 하위 호환 유지
         temperature = state.get("openai_temperature", 0.3)
 
-        print("🤖 OpenAI로 종합 분석 중...")
+        print("🤖 Gemini로 종합 분석 중...")
         print(f"   📊 설정: max_tokens={max_tokens}, temperature={temperature}")
 
         # RAG 인사이트 포맷 (자르지 않음, 페이지 번호 포함)
@@ -300,12 +312,13 @@ class InvestmentAgent:
 """
 
         try:
-            llm = ChatOpenAI(
-                model="gpt-4o",
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash-exp",  # 최신 빠른 모델 (무료 티어 사용 가능)
                 temperature=temperature,
-                max_tokens=max_tokens,
-                api_key=self.openai_api_key,  # 명시적 전달 (env 의존 제거)
+                max_output_tokens=max_tokens,
+                google_api_key=self.google_api_key,
             )
+            # Gemini도 system message 지원 (langchain-google-genai 2.x+)
             response = llm.invoke([
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
@@ -316,25 +329,30 @@ class InvestmentAgent:
             return {**state, "final_analysis": analysis}
 
         except Exception as e:
-            print(f"❌ OpenAI API 오류: {str(e)}")
+            print(f"❌ Gemini API 오류: {str(e)}")
             return {
                 **state,
                 "final_analysis": f"분석 중 오류 발생: {str(e)}",
                 "error": str(e)
             }
 
+    # 하위 호환: 기존 이름으로 호출되는 경우 위임
+    def openai_analysis_node(self, state: InvestmentState) -> InvestmentState:
+        """[Deprecated] gemini_analysis_node로 위임."""
+        return self.gemini_analysis_node(state)
+
     def create_workflow(self):
-        """워크플로우 생성: Genspark 리서치 → RAG → OpenAI 분석."""
+        """워크플로우 생성: Genspark 리서치 → RAG → Gemini 분석."""
         workflow = StateGraph(InvestmentState)
 
         workflow.add_node("research", self.genspark_research_node)
         workflow.add_node("rag_wisdom", self.rag_buffett_wisdom_node)
-        workflow.add_node("openai_analysis", self.openai_analysis_node)
+        workflow.add_node("analysis", self.gemini_analysis_node)
 
         workflow.set_entry_point("research")
         workflow.add_edge("research", "rag_wisdom")
-        workflow.add_edge("rag_wisdom", "openai_analysis")
-        workflow.add_edge("openai_analysis", END)
+        workflow.add_edge("rag_wisdom", "analysis")
+        workflow.add_edge("analysis", END)
 
         return workflow.compile()
 

@@ -1,7 +1,7 @@
 from agent import InvestmentAgent
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import os
@@ -10,14 +10,13 @@ import sys
 # .env 파일에서 API 키 로드
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if not OPENAI_API_KEY or not PERPLEXITY_API_KEY:
-    print("❌ API 키가 설정되지 않았습니다.")
+if not GOOGLE_API_KEY:
+    print("❌ Gemini API 키가 설정되지 않았습니다.")
     print("   프로젝트 루트에 .env 파일을 만들고 다음을 추가하세요:")
-    print("     OPENAI_API_KEY=sk-...")
-    print("     PERPLEXITY_API_KEY=pplx-...")
+    print("     GOOGLE_API_KEY=AIza...")
+    print("   발급: https://aistudio.google.com/apikey  (무료)")
     print("   (.env.example 파일을 참고하세요)")
     sys.exit(1)
 
@@ -69,7 +68,7 @@ def check_pdf_file(pdf_path: str):
         return False
 
 
-def inspect_pdf_processing(pdf_path: str, openai_api_key: str):
+def inspect_pdf_processing(pdf_path: str, google_api_key: str):
     """PDF가 어떻게 로드되고 벡터화되었는지 상세 확인"""
 
     print("=" * 60)
@@ -136,9 +135,10 @@ def inspect_pdf_processing(pdf_path: str, openai_api_key: str):
     # 3. 벡터화 및 검색 테스트
     print("\n[3단계] 벡터 스토어 생성 및 검색 테스트...")
     try:
-        os.environ["OPENAI_API_KEY"] = openai_api_key
-
-        embeddings = OpenAIEmbeddings()
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004",
+            google_api_key=google_api_key,
+        )
         print("   임베딩 생성 중...")
         vector_store_test = FAISS.from_documents(splits, embeddings)
         print("   ✓ 벡터 스토어 생성 완료")
@@ -223,7 +223,7 @@ def main():
         print("\n" + "=" * 60)
         print("📄 PDF 검사 시작")
         print("=" * 60)
-        inspection_result = inspect_pdf_processing(pdf_path, OPENAI_API_KEY)
+        inspection_result = inspect_pdf_processing(pdf_path, GOOGLE_API_KEY)
 
         if inspection_result is None:
             print("\n❌ PDF 검사 실패.")
@@ -232,7 +232,7 @@ def main():
             alt_path = input("\n다른 PDF 경로를 입력하시겠습니까? (경로 입력 또는 Enter로 건너뛰기): ").strip()
             if alt_path and os.path.exists(alt_path):
                 pdf_path = alt_path
-                inspection_result = inspect_pdf_processing(pdf_path, OPENAI_API_KEY)
+                inspection_result = inspect_pdf_processing(pdf_path, GOOGLE_API_KEY)
             elif choice == "1":
                 return
         else:
@@ -252,8 +252,7 @@ def main():
         print(f"   📄 PDF 경로: {pdf_path if pdf_path else '없음 (RAG 비활성화)'}")
 
         agent = InvestmentAgent(
-            openai_api_key=OPENAI_API_KEY,
-            perplexity_api_key=PERPLEXITY_API_KEY,
+            google_api_key=GOOGLE_API_KEY,
             pdf_path=pdf_path  # PDF 경로 전달
         )
 
