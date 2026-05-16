@@ -9,6 +9,10 @@
 
 ---
 
+> 💡 **GenSpark Meetup 해커톤 출품작**  
+> 본 프로젝트는 기존 토이 프로젝트였던 [stockking](https://github.com/bu11ymaguire/stockking)을 기반으로, GenSpark Meetup 해커톤에 참가하여 기능을 고도화하고 한 단계 더 발전시킨 프로젝트입니다.  
+> **Made By GenSpark**
+
 ## 🎯 프로젝트 개요
 
 주식왕 스토킹은 워렌 버핏의 투자 철학을 AI로 재현한 주식 분석 시스템입니다.
