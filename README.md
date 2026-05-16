@@ -80,7 +80,7 @@ graph LR
 
 ```powershell
 # 리포지토리 클론
-git clone https://github.com/bu11ymaguire/stockking.git
+git clone https://github.com/bu11ymaguire/stockking_mk2.git
 cd stockking
 
 # 가상환경 생성 (Windows PowerShell)
@@ -302,7 +302,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ## 🤝 기여하기
 
 ```powershell
-git clone https://github.com/your-username/stockking.git
+git clone https://github.com/your-username/stockking_mk2.git
 git checkout -b feature/amazing-feature
 # 작업 후
 git commit -m "Add: 놀라운 기능 추가"
@@ -321,7 +321,7 @@ MIT License — 자유롭게 사용, 수정, 배포 가능
 ## 📧 문의
 
 - **GitHub**: [@bu11ymaguire](https://github.com/bu11ymaguire)
-- **Issue**: [문제 리포트](https://github.com/bu11ymaguire/stockking/issues)
+- **Issue**: [문제 리포트](https://github.com/bu11ymaguire/stockking_mk2/issues)
 
 ---
 
